@@ -15,18 +15,6 @@ function shuffle<T>(array: T[]): T[] {
   return array.sort((a, b) => 0.5 - Math.random());
 }
 
-function getRandomDescendent(startElement: HTMLElement): HTMLElement {
-  // get a random leaf node or undefined if no child is visible
-  let randDescendent = startElement;
-
-  while (randDescendent && randDescendent.childElementCount > 0) {
-    const visibleChildren = Array.from(randDescendent.children).filter((child) => isVisible(child as HTMLElement));
-    const childIdx = getRandomInt(0, visibleChildren.length - 1);
-    randDescendent = visibleChildren[childIdx] as HTMLElement;
-  }
-  return randDescendent;
-}
-
 type ElementFilter = (element: HTMLElement) => boolean;
 
 // get all descendants which do not have any children (aka leaf nodes)
@@ -112,8 +100,6 @@ declare global {
   function isInViewport(bounding: DOMRect, viewport: Resolution): boolean;
 
   function isVisible(element: HTMLElement): boolean;
-
-  function getRandomDescendent(startElement: HTMLElement): HTMLElement;
 
   function getDescendentLeafNodes(parent: HTMLElement, filter?: ElementFilter, aggregate?: HTMLElement[]): HTMLElement[];
 
