@@ -7,7 +7,10 @@ export async function getContainers(page: Page): Promise<ContainerList> {
       const { width, height } = bounding;
       const area = width * height;
       const viewportArea = viewport.width * viewport.height;
-      return width > viewport.width * 0.2 && height > 50 && area < viewportArea * 0.5;
+      const widthIsOver20Percent = width > viewport.width * 0.2;
+      const heightIsOver50Px = height > 50;
+      const areaIsUnder50Percent = area < viewportArea * 0.5;
+      return widthIsOver20Percent && heightIsOver50Px && areaIsUnder50Percent;
     }
 
     const { containerIndexes, viewport } = await getTaskData();
