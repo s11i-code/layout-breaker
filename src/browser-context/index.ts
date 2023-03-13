@@ -30,13 +30,19 @@ function getDescendentLeafNodes(parent: HTMLElement, filter: ElementFilter = () 
   return [...aggregate, ...descendents];
 }
 
-function fixDimensions(element: HTMLElement, rect: DOMRect): void {
-  Object.assign(element.style, {
+function fixDimensions(element: HTMLElement, rect = element.getBoundingClientRect()): void {
+  const constraintStyles: Partial<CSSStyleDeclaration> = {
     maxWidth: `${rect.width}px`,
     width: `${rect.width}px`,
     maxHeight: `${rect.height}px`,
     height: `${rect.height}px`
-  });
+  };
+  const isInline = window.getComputedStyle(element)["display"] === "inline";
+  if (isInline) {
+    // size constraints do no work with inline elements:
+    constraintStyles["display"] = "inline-block";
+  }
+  Object.assign(element.style, constraintStyles);
 }
 
 function getClosestBlockParent(startElement: HTMLElement): HTMLElement {
@@ -106,4 +112,6 @@ declare global {
   function fixDimensions(startElement: HTMLElement, rect: DOMRect): void;
 
   function elementAlreadyAdded(element: HTMLElement, previouslyAdded: Record<string, number>, dupesAllowed?: number): boolean;
+
+  function getBoundedSides(element: HTMLElement, others: HTMLElement[]): Side[];
 }
