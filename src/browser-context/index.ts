@@ -89,6 +89,37 @@ function isVisibleInDOM(startElement: HTMLElement): boolean {
   return true;
 }
 
+function getBoundedSides(element: HTMLElement, others: HTMLElement[]): Side[] {
+  const style = window.getComputedStyle(element);
+  const bounding = element.getBoundingClientRect();
+
+  const sides = others.flatMap<Side>((other) => {
+    const otherBounding = other.getBoundingClientRect();
+    const otherStyle = window.getComputedStyle(other);
+    if (bounding.left + parseInt(style.marginLeft) === otherBounding.right + parseInt(otherStyle.marginRight)) {
+      return "Left";
+    }
+
+    // element 1 left of element 1
+    if (bounding.right + parseInt(style.marginRight) === otherBounding.left + parseInt(otherStyle.marginLeft)) {
+      return "Right";
+    }
+
+    // element 1 on top of element 2
+    if (bounding.bottom + parseInt(style.marginBottom) === otherBounding.top + parseInt(otherStyle.marginTop)) {
+      return "Bottom";
+    }
+    // element 2 on top of element 1
+    if (bounding.top + parseInt(style.marginTop) === otherBounding.bottom + parseInt(otherStyle.marginBottom)) {
+      return "Top";
+    }
+
+    return [];
+  });
+
+  return Array.from(new Set(sides));
+}
+
 declare global {
   /*~
    */

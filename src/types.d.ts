@@ -18,4 +18,4 @@ interface TaskData {
 
 export type Rect = { width: number; height: number };
 
-export type Side = "left" | "right" | "top" | "bottom";
+export type Side = "Left" | "Right" | "Top" | "Bottom";

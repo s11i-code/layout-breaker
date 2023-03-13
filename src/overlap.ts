@@ -60,15 +60,11 @@ export async function generateOverlapScreenshots(params: Params): Promise<number
       }
 
       const randomBoundedSide = getRandomElement(boundedSides);
-      const offsetBase = ["top", "bottom"].includes(randomBoundedSide)
-        ? containerRect.height / children.length
-        : containerRect.width / children.length;
+      const offsetBase = parseInt(style[`margin${randomBoundedSide}`]) || 5 + parseInt(style[`padding${randomBoundedSide}`]) || 5;
 
       const offset = getRandomInt(offsetBase / 4, offsetBase / 2);
 
-      const prevStyle: Pick<CSSStyleDeclaration, "display" | "margin"> = { display: style.display, margin: style.margin };
-
-      Object.assign(element.style, { [`margin-${randomBoundedSide}`]: `-${offset}px`, display: `inline-block` });
+      Object.assign(element.style, { [`margin${randomBoundedSide}`]: `-${offset}px` });
 
       await screenshotRect({ rect: containerRect, filepath: `${await getFileNamePrefix()}-${idx}` });
 
@@ -80,35 +76,6 @@ export async function generateOverlapScreenshots(params: Params): Promise<number
 
     function elementFilter(viewport: Resolution, child: HTMLElement): boolean {
       return child.nodeType === Node.ELEMENT_NODE && isVisible(child) && isInViewport(child.getBoundingClientRect(), viewport);
-    }
-
-    function getBoundedSides(element: HTMLElement, others: HTMLElement[]): Side[] {
-      const style = window.getComputedStyle(element);
-      const bounding = element.getBoundingClientRect();
-
-      return others.flatMap<Side>((other) => {
-        const otherBounding = other.getBoundingClientRect();
-        const otherStyle = window.getComputedStyle(other);
-        if (bounding.left + parseInt(style.marginLeft) === otherBounding.right + parseInt(otherStyle.marginRight)) {
-          return "left";
-        }
-
-        // element 1 left of element 1
-        if (bounding.right + parseInt(style.marginRight) === otherBounding.left + parseInt(otherStyle.marginLeft)) {
-          return "right";
-        }
-
-        // element 1 on top of element 2
-        if (bounding.bottom + parseInt(style.marginBottom) === otherBounding.top + parseInt(otherStyle.marginTop)) {
-          return "bottom";
-        }
-        // element 2 on top of element 1
-        if (bounding.top + parseInt(style.marginTop) === otherBounding.bottom + parseInt(otherStyle.marginBottom)) {
-          return "top";
-        }
-
-        return [];
-      });
     }
   }, params.containers);
 }
