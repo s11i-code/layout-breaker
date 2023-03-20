@@ -89,28 +89,37 @@ function isVisibleInDOM(startElement: HTMLElement): boolean {
   return true;
 }
 
-function getBoundedSides(element: HTMLElement, others: HTMLElement[]): Side[] {
+export function parseCSSPixelValue(value: string): number | typeof NaN {
+  return parseInt(value.split("px")[0]);
+}
+
+export function getBoundedSides(element: HTMLElement, others: HTMLElement[]): Side[] {
   const style = window.getComputedStyle(element);
   const bounding = element.getBoundingClientRect();
 
   const sides = others.flatMap<Side>((other) => {
     const otherBounding = other.getBoundingClientRect();
     const otherStyle = window.getComputedStyle(other);
-    if (bounding.left + parseInt(style.marginLeft) === otherBounding.right + parseInt(otherStyle.marginRight)) {
+
+    // element right of other
+    if (Math.round(bounding.left - parseInt(style.marginLeft)) === Math.round(otherBounding.right + parseInt(otherStyle.marginRight))) {
       return "Left";
     }
 
-    // element 1 left of element 1
-    if (bounding.right + parseInt(style.marginRight) === otherBounding.left + parseInt(otherStyle.marginLeft)) {
+    // element left of other
+    if (Math.round(bounding.right + parseInt(style.marginRight)) === Math.round(otherBounding.left - parseInt(otherStyle.marginLeft))) {
       return "Right";
     }
 
-    // element 1 on top of element 2
-    if (bounding.bottom + parseInt(style.marginBottom) === otherBounding.top + parseInt(otherStyle.marginTop)) {
+    // element on top of other
+    if (
+      Math.round(bounding.bottom + parseInt(style.marginBottom)) ===
+      Math.round(otherBounding.top) - Math.round(parseInt(otherStyle.marginTop))
+    ) {
       return "Bottom";
     }
-    // element 2 on top of element 1
-    if (bounding.top + parseInt(style.marginTop) === otherBounding.bottom + parseInt(otherStyle.marginBottom)) {
+    // element below other
+    if (Math.round(bounding.top - parseInt(style.marginTop)) === Math.round(otherBounding.bottom + parseInt(otherStyle.marginBottom))) {
       return "Top";
     }
 
