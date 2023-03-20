@@ -16,6 +16,7 @@ tmp
 # Build
 public/css/main.css
 
+stealth.mjs
 # Coverage reports
 coverage
 
