@@ -1,0 +1,42 @@
+<!DOCTYPE html>
+<html>
+  <head>
+    <meta charset="UTF-8" />
+    <title>Bounding Boxes</title>
+  </head>
+  <style>
+    .container {
+      display: grid;
+      grid-template-columns: 120px 120px 120px;
+    }
+
+    div:not(.container) {
+      margin: 10px;
+      background: blue;
+      padding: 5px;
+      text-align: center;
+      color: white;
+    }
+
+    .top {
+      grid-column: 2 / 3;
+    }
+
+    .left {
+      grid-column: 1 / 2;
+    }
+
+    .bottom {
+      grid-column: 2 / 3;
+    }
+  </style>
+  <body>
+    <div class="container">
+      <div class="top">Top</div>
+      <div class="left">Left</div>
+      <div class="center">Center</div>
+      <div class="right">Right</div>
+      <div class="bottom">Bottom</div>
+    </div>
+  </body>
+</html>
