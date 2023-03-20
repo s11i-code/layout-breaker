@@ -1,5 +1,5 @@
 /* eslint-disable @typescript-eslint/ban-ts-ignore */
-import puppeteer, { Browser, PuppeteerLaunchOptions } from "puppeteer";
+import { Browser, PuppeteerLaunchOptions } from "puppeteer";
 import { Cluster } from "puppeteer-cluster";
 import { ContainerList, Resolution, TaskData } from "./types";
 import { ensureFolderExists, getFileName, screenshotElements, screenshotRect, ScreenshotRectParams } from "./utils";
@@ -12,6 +12,13 @@ import { generateOverflowScreenshots } from "./overflow";
 import { UNTOUCHED, OVERFLOW, OVERLAP, ALL_MANIPULATIONS } from "./consts";
 import { parseArgs } from "./args";
 import { createCluster } from "./createCluster";
+
+import puppeteer from "puppeteer-extra";
+
+import AdblockerPlugin from "puppeteer-extra-plugin-adblocker";
+import StealthPlugin from "puppeteer-extra-plugin-stealth";
+
+puppeteer.use(AdblockerPlugin()).use(StealthPlugin());
 
 // ways of sharing:
 // - addScriptTag
