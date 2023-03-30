@@ -27,10 +27,12 @@ puppeteer.use(AdblockerPlugin()).use(StealthPlugin());
 
 const HASH = (Math.random() + 1).toString(36).substring(8);
 const EXECUTION_ID = `${new Date().getMonth()}-${new Date().getDate()}-${HASH}`;
+
+// TODO
 const VIEWPORTS: Resolution[] = [
   //{ width: 768, height: 2000 },
   //{ width: 375, height: 2000 },
-  { width: 1000, height: 2500 }
+  { width: 1300, height: 4000 }
 ];
 const DEFAULT_BASE_FOLDER = "layout-breaker-images";
 
@@ -47,10 +49,11 @@ console.log(`Starting scraping execution ${EXECUTION_ID} DEBUG_MODE ${debug}, wi
 
 const puppeteerOptions: PuppeteerLaunchOptions = {
   headless: !debug,
-  devtools: debug
+  devtools: debug,
+  timeout: 30000
   //args: ["--disable-web-security", "--disable-features=IsolateOrigins,site-per-process"]
   //args: ["--shm-size=3gb"]
-  // executablePath: "/Applications/Google Chrome Canary.app/Contents/MacOS/Google Chrome Canary"
+  // executablePath: "load/Applications/Google Chrome Canary.app/Contents/MacOS/Google Chrome Canary"
 };
 
 const RUN_PARALLEL = debug ? false : true;
@@ -98,24 +101,31 @@ const RUN_PARALLEL = debug ? false : true;
 })();
 
 async function scrapeSite({ page, data }: { page: Page; data: TaskData }): Promise<void> {
+  page.on("console", (consoleObj) => {
+    console.log(consoleObj.text());
+  });
+
+  page.on("error", (err) => {
+    console.log("Error occurred: ", err);
+  });
+
+  page.on("pageerror", (pageerr) => {
+    console.log("Page error occurred: ", pageerr);
+  });
+
   const { site, viewport, manipulation, baseFolder } = data;
 
   await page.setBypassCSP(true);
 
-  await page
-    .goto(site, { waitUntil: "networkidle2", timeout: 0 })
-    .catch((error) => console.error(`Cannot access the site ${site}: ${JSON.stringify(error)}. Is there a working Internet connection?`));
-
   await page.setViewport({ ...viewport, deviceScaleFactor: 1 });
 
-  await page.addScriptTag({ path: "./build/browser-context/index.js" });
+  await page
+    .goto(site, { waitUntil: "load", timeout: 0 })
+    .catch((error) => console.error(`Cannot access the site ${site}: ${JSON.stringify(error)}. Is there a working Internet connection?`));
+
+  await page.content();
 
   await attemptCookieConsent(page);
-
-  // print page context logs to terminal(=node context):
-  page.on("console", (consoleObj) => {
-    console.log(consoleObj.text());
-  });
 
   // DEFINE FOLDERS
   const folderName = `${baseFolder}/${manipulation}`;
@@ -128,6 +138,12 @@ async function scrapeSite({ page, data }: { page: Page; data: TaskData }): Promi
   await page.exposeFunction("screenshotRect", (params: ScreenshotRectParams) => screenshotRect(page, params));
   await page.exposeFunction("getFileNamePrefix", () => `${folderName}/${filename}`);
   await page.exposeFunction("getTaskData", () => data);
+
+  await page.content();
+  await page.waitForNetworkIdle();
+
+  await page.addScriptTag({ path: "./build/src/browser-context/index.js" });
+
   // GET ELEMENTS THAT WILL BE MANIPULATED:
   const containers: ContainerList = await getContainers(page);
 

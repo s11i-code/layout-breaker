@@ -6,16 +6,17 @@ export interface Params {
   containers: ContainerList;
 }
 
+type BoundedSide = ReturnType<typeof getBoundedSides>[number];
+interface BoundedPair extends BoundedSide {
+  element: HTMLElement;
+}
+
 export async function generateOverlapScreenshots(params: Params): Promise<number[]> {
   return params.page.evaluate(async (containers) => {
     const indexes: number[] = [];
-
-    const elementsSeen = {};
-    const filteredContainers = containers.filter((el) => el.childElementCount > 1 && !elementAlreadyAdded(el, elementsSeen));
-
     // Run promises sequentially to make sure the reset for the previous overflow
     // happens before the next one:
-    for (const [index, container] of Object.entries(Array.from(filteredContainers))) {
+    for (const [index, container] of Object.entries(Array.from(containers))) {
       if (await generateOverlap(container, Number(index))) {
         indexes.push(Number(index));
       }
@@ -29,42 +30,51 @@ export async function generateOverlapScreenshots(params: Params): Promise<number
     async function generateOverlap(container: HTMLElement, idx: number): Promise<boolean> {
       const { viewport } = await getTaskData();
 
-      // first do a quick check for performance
-      // before we get to to heavier DOM filtering:
-      if (container.childElementCount <= 1) {
-        return false;
-      }
+      //const children = (Array.from(container.children) as HTMLElement[]).filter((element) => elementFilter(viewport, element));
+      const allDescendants = Array.from(container.querySelectorAll<HTMLElement>("*"));
 
-      const children = (Array.from(container.children) as HTMLElement[]).filter((element) => elementFilter(viewport, element));
+      const filteredDescendants = allDescendants.filter((element: HTMLElement) => elementFilter(container, viewport, element));
 
-      if (children.length <= 1) {
+      const boundedPairs: BoundedPair[] = filteredDescendants.flatMap((element) => {
+        const boundedSides = getBoundedSides(element, filteredDescendants);
+        if (boundedSides.length === 0) {
+          // filter this one out from descendants:
+          return [];
+        }
+        const randomBoundedSide = getRandomElement(boundedSides);
+        return [{ element, ...randomBoundedSide }];
+      });
+
+      if (boundedPairs.length <= 1) {
+        console.log("Not enough descendents for ", idx);
+
         return false;
       }
 
       const containerRect = container.getBoundingClientRect().toJSON();
-
       fixDimensions(container, containerRect);
       // shuffle to introduce variation:
-      const shuffledIndices = shuffle(Array.from(children.keys()));
-      const [first, ...rest] = shuffledIndices;
+      const shuffledIndices = shuffle(Array.from(boundedPairs.keys()));
       // pick first at from shuffled indices so it's random:
-      const element = children[first];
+      const { element, otherElement, side } = boundedPairs[getRandomElement(shuffledIndices)];
       const style = window.getComputedStyle(element);
-      const boundedSides = getBoundedSides(
-        element,
-        rest.map((index) => children[index])
-      );
 
-      if (boundedSides.length === 0) {
+      const minOffset = getCSSSpacingBetween(element, side, otherElement);
+      const maxOffset = Math.max(getDistanceBetweenRects(containerRect, side, element.getBoundingClientRect()));
+
+      console.log("OVERLAPS");
+      if (minOffset > maxOffset) {
+        // this shoul not happen in a normal situation:
+        console.log("min bigger than max");
         return false;
       }
 
-      const randomBoundedSide = getRandomElement(boundedSides);
-      const offsetBase = parseInt(style[`margin${randomBoundedSide}`]) || 5 + parseInt(style[`padding${randomBoundedSide}`]) || 5;
+      const offset = getRandomInt(minOffset, maxOffset);
+      const prevStyle: Pick<CSSStyleDeclaration, "margin" | "zIndex"> = { margin: style.margin, zIndex: style.zIndex };
 
-      const offset = getRandomInt(offsetBase / 4, offsetBase / 2);
+      Object.assign(element.style, { [`margin${side}`]: `-${offset}px`, zIndex: "100" });
 
-      Object.assign(element.style, { [`margin${randomBoundedSide}`]: `-${offset}px` });
+      console.log("Screenshotting", idx);
 
       await screenshotRect({ rect: containerRect, filepath: `${await getFileNamePrefix()}-${idx}` });
 
@@ -74,8 +84,27 @@ export async function generateOverlapScreenshots(params: Params): Promise<number
       return true;
     }
 
-    function elementFilter(viewport: Resolution, child: HTMLElement): boolean {
-      return child.nodeType === Node.ELEMENT_NODE && isVisible(child) && isInViewport(child.getBoundingClientRect(), viewport);
+    function getCSSSpacingBetween(element: HTMLElement, side: Side, opposite: HTMLElement): number {
+      const style = window.getComputedStyle(element);
+      const oppositeStyle = window.getComputedStyle(opposite);
+      const distance = parseCSSPixelValue(style[`margin${side}`]) + parseCSSPixelValue(style[`padding${side}`]);
+      const oppositeSides: Record<Side, Side> = {
+        Right: "Left",
+        Left: "Right",
+        Top: "Bottom",
+        Bottom: "Top"
+      };
+      const oppositeSide = oppositeSides[side];
+      const oppositeDistance =
+        parseCSSPixelValue(oppositeStyle[`margin${oppositeSide}`]) + parseCSSPixelValue(oppositeStyle[`padding${oppositeSide}`]);
+
+      return distance + oppositeDistance;
+    }
+
+    function elementFilter(container: HTMLElement, viewport: Resolution, child: HTMLElement): boolean {
+      return (
+        child.nodeType === Node.ELEMENT_NODE && isInViewport(child.getBoundingClientRect(), viewport) && isVisibleInDOM(child, container)
+      );
     }
   }, params.containers);
 }

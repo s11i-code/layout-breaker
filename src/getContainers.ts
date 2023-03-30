@@ -15,12 +15,15 @@ export async function getContainers(page: Page): Promise<ContainerList> {
 
     const { containerIndexes, viewport } = await getTaskData();
     const selectors = "div, section, article, ul, ol, dl, aside, header, footer, button, nav";
-
+    const containersSeen = {};
     const containers = Array.from(document.querySelectorAll<HTMLElement>(selectors)).filter((container: HTMLElement) => {
       const rect = container.getBoundingClientRect();
-      return isInViewport(rect, viewport) && isOptimalSize(rect) && isVisibleInDOM(container);
+      return (
+        isInViewport(rect, viewport) && isOptimalSize(rect) && isVisibleInDOM(container) && !elementAlreadyAdded(container, containersSeen)
+      );
     });
 
+    debugger;
     if (containerIndexes) {
       return containerIndexes.map((index) => containers[index]);
     }

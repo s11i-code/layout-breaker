@@ -4,6 +4,11 @@ export async function attemptCookieConsent(page: Page): Promise<void> {
   //await page.exposeFunction("acceptXcc", acceptXcc);
   //const frame = page.frames()[0];
 
+  //give the prompt a few seconds to start loading:
+  //await new Promise((resolve) => setTimeout(resolve, 3000));
+  await page.content();
+  await page.waitForNetworkIdle();
+
   await page.evaluate(() => {
     function acceptXcc(doc: Document): void {
       function xccContains(): HTMLElement[] {
@@ -25,7 +30,6 @@ export async function attemptCookieConsent(page: Page): Promise<void> {
 
     acceptXcc(document);
 
-    debugger;
     // Array.from(iframes).forEach((iframe) => {
     //   iframe.contentDocument && acceptXcc(iframe.contentDocument);
     // });

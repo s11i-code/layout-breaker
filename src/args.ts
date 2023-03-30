@@ -7,10 +7,13 @@ function isManipulation(item: any): item is Manipulation {
 }
 
 const ARGS_KEYS = ["containerindexes", "folder", "debug", "sites", "manipulations", "_"] as const;
-type ArgKey = typeof ARGS_KEYS[number];
+type ArgKeys = typeof ARGS_KEYS[number];
 // minimist annoyingly parses number-ish values to numbers...:
 type ArgValue = string | number;
-type RawArgs = Partial<Record<ArgKey, ArgValue>>;
+
+type RawArgs = {
+  [ArgKey in ArgKeys]: ArgKey extends "_" ? ArgValue[] : ArgValue;
+};
 
 interface ParsedArgs {
   folder?: string;
@@ -33,7 +36,7 @@ function parse<T = string>(val: ArgValue, mapper: Mapper<T> = noOp): T[] {
 
 export function parseArgs(): ParsedArgs {
   const rawArgs = minimist<RawArgs>(process.argv.slice(2)) as RawArgs;
-  const unknownArgs = Object.keys(rawArgs).filter((argKey) => !ARGS_KEYS.includes(argKey as ArgKey));
+  const unknownArgs = Object.keys(rawArgs).filter((argKey) => !ARGS_KEYS.includes(argKey as ArgKeys));
   const parsedManipulations = rawArgs.manipulations ? parse<Manipulation>(rawArgs.manipulations) : undefined;
   const parsedIndexes =
     rawArgs.containerindexes || rawArgs.containerindexes === 0 ? parse<number>(rawArgs.containerindexes, parseFloat) : undefined;
@@ -45,6 +48,11 @@ export function parseArgs(): ParsedArgs {
         ", "
       )}.`
     );
+    process.exit();
+  }
+
+  if (rawArgs["_"].length) {
+    console.error(`Unexpected parameter format detected: ${rawArgs["_"]}. You should use --parameter=value format.`);
     process.exit();
   }
 

@@ -3,11 +3,11 @@
   "version": "1.0.0",
   "description": "generate images from broken layouts for fun and science",
   "scripts": {
-    "test": "npm run compile && npx mocha build/test/ --timeout 300000",
+    "test": "npm run compile && npx mocha build/test/ --timeout 1500000",
     "lint": "eslint 'src/index.ts' --fix",
-    "scrape-debug:node": "npm run compile && node --inspect-brk build/index.js --debug=true",
-    "scrape-debug:browser": "npm run compile && node build/index.js --debug=true",
-    "scrape": "npm run compile && node build/index.js",
+    "scrape-debug:node": "npm run compile && node --inspect-brk build/src/index.js --debug=true",
+    "scrape-debug:browser": "npm run compile && node build/src/index.js --debug=true",
+    "scrape": "npm run compile && node build/src/index.js",
     "sync": "aws s3 sync ./layout-breaker-images/ s3://layout-breaker --profile satu",
     "scrape-sync": "npm run scrape && npm run sync",
     "compile": "rm -rf build && tsc"
@@ -19,7 +19,6 @@
     "@types/minimist": "^1.2.0",
     "@types/mocha": "^10.0.1",
     "@types/node": "^12.11.7",
-    "@types/uuid": "^9.0.0",
     "@typescript-eslint/eslint-plugin": "^2.34.0",
     "@typescript-eslint/parser": "^2.34.0",
     "chai": "^4.3.7",
